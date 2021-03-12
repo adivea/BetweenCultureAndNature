@@ -23,6 +23,10 @@ opts_chunk$set(echo=TRUE,
 opts_knit$set(width=75)
 ```
 
+This script visualizes the spatial component of the data accompanying the Spring 2021 course on the City: Between Culture and Nature, taught by Mikkel Thelle and Mikkel Høghøj. 
+The course surveys the gradual appearance of private and public bathing facilities, toilets and communal hygienic resources in the city of Copenhagen during the 20th century.
+By editing elements in this script, you can explore different aspects of past and present hygienic amenities in the capital of Denmark.  
+
 # Before we start: data wrangling
 First load your spatial analysis toolkit 
 ```{r libraries}
@@ -54,10 +58,9 @@ Next attach the attribute data
 wc <- read_sheet("https://docs.google.com/spreadsheets/d/1iFvycp6M6bF8GBkGjA2Yde2yCIhiy5_slAkGF-RUF7w/edit#gid=0",
                     col_types = "cnnnnnnnn")
 wc
-
-
 ```
-Data on washing resources in Copenhagen now looks good and tidy, but its spatial resolution is better than the provided polygons (as in we have multiple rows that all fit within one suburb id). We therefore need to aggregate the data before we attach it to the spatial polygons
+
+Data on access to hygienic facilities and other water resources in Copenhagen now looks good and tidy, but its spatial resolution is better than the provided polygons (as in we have multiple rows that all fit within one suburb id). We therefore need to aggregate the data before we attach it to the spatial polygons
 ```{r}
 wcdata <- wc %>% 
   group_by(year, suburb_id) %>% 
