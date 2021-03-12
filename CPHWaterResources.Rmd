@@ -1,0 +1,252 @@
+---
+title: 'Water Resources in Copenhagen during 20th century'
+author: "Adela Sobotkova"
+date: "March-2021 updated`r Sys.Date()`"
+output:
+  rmdformats::readthedown:
+    highlight: kate
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+library(rmdformats)
+
+## Global options
+options(max.print="75")
+opts_chunk$set(echo=TRUE,
+	             cache=TRUE,
+               prompt=FALSE,
+               tidy=TRUE,
+               comment=NA,
+               message=FALSE,
+               warning=FALSE)
+opts_knit$set(width=75)
+```
+
+# Before we start: data wrangling
+First load your spatial analysis toolkit 
+```{r libraries}
+library(sf)
+library(tidyverse)
+library(spatstat)
+library(spatialkernel)
+library(googlesheets4)
+library(leaflet)
+```
+
+Next, load your spatial data
+```{r}
+suburbs <- st_read("data/bydel.shp")
+plot(suburbs$geometry)
+tail(suburbs)
+#write_rds(suburbs, "data/CPHsuburbs.rds")
+
+suburbs$id
+#Clean up suburb names
+suburbs$navn
+
+suburbs %>% 
+  select(navn) %>% 
+  mutate(Name=gsub("<f8>|<d8>","oe",navn))
+```
+Next attach the attribute data
+```{r }
+wc <- read_sheet("https://docs.google.com/spreadsheets/d/1iFvycp6M6bF8GBkGjA2Yde2yCIhiy5_slAkGF-RUF7w/edit#gid=0",
+                    col_types = "cnnnnnnnn")
+wc
+
+
+```
+Data on washing resources in Copenhagen now looks good and tidy, but its spatial resolution is better than the provided polygons (as in we have multiple rows that all fit within one suburb id). We therefore need to aggregate the data before we attach it to the spatial polygons
+```{r}
+wcdata <- wc %>% 
+  group_by(year, suburb_id) %>% 
+  summarize(flats = sum(flats),
+            bath = sum(bath),
+            wc_access=sum(wc_access),
+            warmH20=sum(hot_water),
+            communal_wc = sum(wc_communal_ct),
+            communal_bath = sum(bath_communal_ct))
+wcdata  
+# write_rds(wcdata, "data/CPH_wcdata.rds")
+```
+
+# Join the data with the spatial representations
+Now we can join the data with the spatial polygons
+```{r merge data}
+wc_spatial <- suburbs %>% 
+  merge(wcdata, by.x= "id",by.y ="suburb_id")
+wc_spatial
+
+```
+```{r check names}
+names(wc_spatial)
+```
+Lets look at the data in a map.
+
+# Flats through time
+```{r}
+library(tmap)
+wc1950 <- wc_spatial %>% 
+  filter(year==1950)
+
+tmap_mode(mode = "view" )
+tm_shape(wc_spatial) +
+  tm_facets(by = "year")+
+  tm_borders(col = "black",
+             lwd = 1) +
+  tm_polygons("flats",
+             style = "pretty")+
+  tm_scale_bar(position = c("LEFT", "BOTTOM"),
+               breaks = c(0, 2, 4),
+               text.size = 1) +
+  tm_compass(position = c("RIGHT", "TOP"),
+             type = "rose", 
+             size = 2) +
+  tm_credits(position = c("LEFT", "BOTTOM"),
+             text = "Adela Sobotkova, 2021") +
+  tm_layout(main.title = "Copenhagen Flats",
+            #bg.color = "lightblue",
+            legend.outside = TRUE)
+
+```
+# Lets look at flats per square kilometer
+
+```{r}
+wc_spatial <- wc_spatial %>% 
+  mutate(area_km2 = areal_m2/1000000,
+         flat_per_km = flats/area_km2)
+```
+
+```{r}
+library(tmap)
+
+tm_shape(wc_spatial) +
+  tm_facets(by = "year")+
+  tm_borders(col = "black",
+             lwd = 1) +
+  tm_polygons("flat_per_km",
+             style = "pretty")+
+  tm_scale_bar(position = c("LEFT", "BOTTOM"),
+               breaks = c(0, 2, 4),
+               text.size = 1) +
+  tm_compass(position = c("RIGHT", "TOP"),
+             type = "rose", 
+             size = 2) +
+  tm_credits(position = c("LEFT", "BOTTOM"),
+             text = "Adela Sobotkova, 2021") +
+  tm_layout(main.title = "Copenhagen Flats per sq km",
+            #bg.color = "lightblue",
+            legend.outside = TRUE)
+```
+
+# Access to toilets and baths, per suburb and sq kilometer
+
+Lets calculate the baths and toilets available per square kilometer per each suburb
+
+```{r}
+wc_spatial <- wc_spatial %>% 
+  mutate(bath_per_km = bath/area_km2,
+         wc_per_km = wc_access/area_km2)
+```
+
+# Continue with communal resources and warm water
+
+
+```{r}
+
+```
+
+# Access OSM data for Copenhagen and retrieve ??? (whatever would be relevant??)
+
+The [OpenStreetMap](https://wiki.openstreetmap.org/wiki/Map_features) contains free and open spatial data for physical features on the ground, with each features' type being define using [key:value pair tags](https://wiki.openstreetmap.org/wiki/Map_features).  Each tag describes a geographic attribute of the feature being shown by that specific node, way or relation. 
+
+Use:
+
+* `osmdata:opq()` to define the bounding box of the osm request
+* `osmdata:add_osm_feature()` to define the key:value pairs you are looking for
+* `osmdata:osmdata_sf()` to retrieve the osm data.
+
+```{r}
+library(osmdata)
+
+# Create a bounding box
+bb  <- suburbs %>% st_transform(4326) %>% st_bbox()
+plot(bb)
+q <- opq(bbox = bb,timeout = 180)
+qa  <- add_osm_feature(q, key = 'amenity',value = 'public_bath')
+qb     <- add_osm_feature(q, key = 'amenity',value = 'drinking_water')
+qc     <- add_osm_feature(q, key = 'amenity',value = 'shower')
+qd     <- add_osm_feature(q, key = 'amenity',value = 'toilets')
+qe     <- add_osm_feature(q, key = 'amenity',value = 'water_point')
+public_bath <- c(osmdata_sf(qa),osmdata_sf(qb),
+                 osmdata_sf(qc),
+                 osmdata_sf(qd))
+
+```
+
+## Clean up OSM data
+Use the following code to clean the results and project them in LAEA.
+
+This code:
+
+* removes the duplicated geometries thanks to osmdata::unique_osmdata (see the documentation for details)
+* projects into Lambert 93
+* keeps the name attribute only
+* computes the centroids for the baths stored as polygons
+* Eventually, the baths outside CPH suburbs are removed.
+```{r}
+bath_uniq <- unique_osmdata(public_bath)
+
+rpoint <- bath_uniq$osm_points %>% 
+  filter(!is.na(amenity)) %>% 
+  st_transform(32632) %>% select(name) 
+
+rpoly  <- bath_uniq$osm_polygons %>% 
+  st_transform(32632) %>% 
+  select(name)  %>% st_centroid()
+
+baths_osm <- rbind(rpoly,rpoint)   
+
+baths_osm <- st_intersection(baths_osm, st_transform(suburbs, 32632) %>% st_geometry() %>% st_union())
+
+# transform also historical baths 
+baths_cph <- wc_spatial%>% 
+#  filter(year==1970) %>%
+  st_centroid() %>% 
+  st_transform(32632) %>% 
+  mutate(radius = sqrt(bath_per_km)) %>% 
+  arrange(desc(bath_per_km))
+```
+
+Now, let's display the results in two synchronized mapview maps:
+
+* one with bathing resources in suburbs
+* another one with baths extracted from OSM.
+* Use the `mapview::sync` function to display both maps side by side with synchronisation.
+
+```{r}
+library(mapview)
+map_osm <-  mapview(baths_osm, map.types = "OpenStreetMap", 
+        col.regions = "#940000", 
+        label = as.character(suburbs$name), 
+        color = "white", legend = FALSE, layer.name = "Baths in OSM",
+        homebutton = FALSE, lwd = 0.5) 
+
+
+#test map
+mapview(baths_cph[,-3], map.types = "Stamen.TonerLite", cex="radius", legend=FALSE,
+        col.regions="#217844", lwd=0, alpha=0.4)
+
+map_cph <-  mapview(baths_cph[,-3], 
+          map.types = "OpenStreetMap", 
+        col.regions = "#940000", 
+        color = "white", 
+        cex = "bath_per_km",
+        legend = TRUE, 
+        layer.name = "Baths from 1970",
+        homebutton = FALSE, lwd = 0.5) 
+
+sync(map_osm,map_cph)
+```
+

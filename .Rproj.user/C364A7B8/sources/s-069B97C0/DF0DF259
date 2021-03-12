@@ -1,0 +1,26 @@
+{
+    "id": "DF0DF259",
+    "path": "~/Documents/RStudio/1_Teaching/BetweenCultureAndNature/CPHWaterResources.Rmd",
+    "project_path": "CPHWaterResources.Rmd",
+    "type": "r_markdown",
+    "hash": "0",
+    "contents": "",
+    "dirty": false,
+    "created": 1615548626920.0,
+    "source_on_save": false,
+    "relative_order": 1,
+    "properties": {
+        "tempName": "Untitled1",
+        "cursorPosition": "70,2",
+        "scrollLine": "60",
+        "last_setup_crc32": ""
+    },
+    "folds": "0|3|7|0|\n27|16|34|0|\n52|7|58|0|\n86|20|111|3|\n87|6|111|0|\n112|41|141|0|\n114|6|118|0|\n120|6|140|0|\n142|58|151|0|\n146|6|150|0|\n152|49|158|0|\n155|6|157|0|\n159|80|252|0|\n169|6|185|0|\n187|20|252|0|\n197|6|219|0|\n227|6|250|0|\n",
+    "lastKnownWriteTime": 1615561145,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1615561145513,
+    "read_only": false,
+    "read_only_alternatives": []
+}
