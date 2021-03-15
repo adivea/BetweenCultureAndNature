@@ -206,8 +206,10 @@ wc_spatial <- wc_spatial %>%
 ```{r}
 
 ```
+
 <br>
 <br>
+
 # Access OSM data for Copenhagen and retrieve (whatever would be relevant?)
 
 The [OpenStreetMap](https://wiki.openstreetmap.org/wiki/Map_features) contains free and open spatial data for physical features on the ground, with each features' type being define using [key:value pair tags](https://wiki.openstreetmap.org/wiki/Map_features).  Each tag describes a geographic attribute of the feature being shown by that specific node, way or relation. 
@@ -351,6 +353,10 @@ map_hist <-  mapview(hist_baths,
 
 sync(map_osm,map_hist)
 ```
+<br>
+<br>
+
+
 # Comparing two point patterns. How do we best do it? 
 
 We have two patterns, historical and OSM data. Are they similar or dissimilar? How do the patterns of historical and current public bathhouses compare beyond a quick eyeball evaluation?
