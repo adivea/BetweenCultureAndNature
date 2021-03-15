@@ -87,7 +87,7 @@ saveWidget(Bathsmap, "Bathhousemap.html", selfcontained = TRUE)
 #############################################################
 #  Part II - Compare OSM data with present dataset
 #############################################################
-# Convert data points into a grid using the function defined below
+# Convert OSM data points into a grid using the function defined below
 
 pt_in_grid <- function(feat, adm, cellsize = 1000){
   grid <- st_make_grid(x = adm, cellsize = cellsize, what = "polygons")
@@ -128,7 +128,7 @@ leaflet(gr_osm%>%
   addProviderTiles(providers$Stamen.TonerLite) %>% 
   addPolygons(fillColor = ~pal(gr_osm$n), 
               stroke = FALSE, 
-              fillOpacity = 0.7) %>% 
+              fillOpacity = 0.7) # %>% 
   # addLegend(colors = ~pal(bks), 
   #           #labels = round(bks[1:(length(bks)-1)]*10)/10,
   #           title = "# net difference between</br> bathrooms 
