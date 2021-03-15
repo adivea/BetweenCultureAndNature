@@ -1,6 +1,61 @@
 "0","library(sf)"
 "0","library(tidyverse)"
 "0","library(spatstat)"
+"2","Loading required package: spatstat.data
+"
+"2","Loading required package: nlme
+"
+"2","
+Attaching package: ‘nlme’
+
+"
+"2","The following object is masked from ‘package:raster’:
+
+    getData
+
+"
+"2","The following object is masked from ‘package:dplyr’:
+
+    collapse
+
+"
+"2","Loading required package: rpart
+"
+"2","Registered S3 method overwritten by 'spatstat':
+  method     from
+  print.boxx cli 
+"
+"2","
+spatstat 1.64-1       (nickname: ‘Help you I can, yes!’) 
+For an introduction to spatstat, type ‘beginner’ 
+
+"
+"2","
+Note: spatstat version 1.64-1 is out of date by more than 10 months; we recommend upgrading to the latest version.
+"
+"2","
+Attaching package: ‘spatstat’
+
+"
+"2","The following objects are masked from ‘package:raster’:
+
+    area, rotate, shift
+
+"
 "0","library(spatialkernel)"
+"2","
+This is spatialkernel 0.4-24
+
+
+"
+"2","
+Attaching package: ‘spatialkernel’
+
+"
+"2","The following object is masked from ‘package:spatstat.data’:
+
+    lansing
+
+"
 "0","library(googlesheets4)"
 "0","library(leaflet)"
