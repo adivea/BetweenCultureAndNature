@@ -87,7 +87,7 @@ saveWidget(Bathsmap, "Bathhousemap.html", selfcontained = TRUE)
 #############################################################
 #  Part II - Compare OSM data with present dataset
 #############################################################
-# Convert OSM data points into a grid using the function defined below
+# Convert data points into a grid using the function defined below
 
 pt_in_grid <- function(feat, adm, cellsize = 1000){
   grid <- st_make_grid(x = adm, cellsize = cellsize, what = "polygons")

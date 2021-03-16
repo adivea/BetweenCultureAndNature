@@ -1,0 +1,238 @@
+---
+title: 'Water Resources in Copenhagen during 20th century - 01'
+author: "Adela Sobotkova"
+date: "March-2021 updated`r Sys.Date()`"
+output:
+  rmdformats::readthedown:
+    highlight: kate
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+library(rmdformats)
+
+## Global options
+options(max.print="200")
+options(width = 200)
+opts_chunk$set(echo=TRUE,
+	             cache=TRUE,
+               prompt=FALSE,
+               tidy=TRUE,
+               comment=NA,
+               message=FALSE,
+               warning=FALSE)
+opts_knit$set(width=200)
+```
+
+This script visualizes the spatial component of the data accompanying the Spring 2021 course on the City: Between Culture and Nature, taught by Mikkel Thelle and Mikkel Høghøj. 
+The course surveys the gradual appearance of private and public bathing facilities, toilets and communal hygienic resources in the city of Copenhagen during the 20th century.
+By editing elements in this script, you can explore different aspects of past and present hygienic amenities in the capital of Denmark.  
+
+# Before we start: data wrangling
+First load the packages necessary for spatial data visualisation and analysis.
+```{r libraries}
+library(sf)
+library(tidyverse)
+library(googlesheets4)
+library(leaflet)
+```
+
+## Spatial data
+Next, load your spatial data - polygons representing the suburbs of Copenhagen. 
+```{r}
+suburbs <- st_read("data/bydel.shp", options = "ENCODING=WINDOWS-1252") # thank you, Malte, for the options argument which fixed the Danish chars
+
+plot(suburbs$geometry)
+tail(suburbs)
+#write_rds(suburbs, "data/CPHsuburbs.rds")
+
+suburbs$id
+
+```
+
+
+## Attribute data
+Next let's bring in the attribute data. 
+I read the data from a google sheet where my colleagues and I can edit it. You can load it from there if you have a `googlesheets4` package installed, or you can use the `read_csv()` function to read the `wc.csv` provided in the data folder
+```{r read-wc}
+# Uncomment the lines below to read data from GDrive
+# wc <- read_sheet("https://docs.google.com/spreadsheets/d/1iFvycp6M6bF8GBkGjA2Yde2yCIhiy5_slAkGF-RUF7w/edit#gid=0",
+#                     col_types = "cnnnnnnnn")
+# write_csv(wc, "data/wc.csv")
+wc <- read_csv("data/wc.csv")
+wc
+```
+
+
+## Spatial resolution adjustment - data aggregation
+Data on access to hygienic facilities and other water resources in Copenhagen now looks good and tidy, but its *spatial resolution* is higher than the provided polygons (as in we have multiple rows that all fit within one suburb `id`). We therefore use the `group_by()` function to aggregate the data by id before we continue with any spatial operations.  Given that the dataset is in fact a time-series, and each `kvarter` has a record for a given year or decade, we need to group first by the `year` and then only by `id`. 
+
+While aggregating the finer scale data into larger units, it is convenient to generate some statistics, such as percentages of flats that have bath and wc and hot water access within each suburb. We do this using the `summarize()` function below.
+```{r}
+wcdata <- wc %>% 
+  group_by(year, suburb_id) %>% 
+  summarize(flats = sum(flats),
+            bath = sum(bath),
+            pct_bath = bath/flats*100,
+            wc_access=sum(wc_access),
+            pct_wc= wc_access/flats*100,
+            warmH20=sum(hot_water),
+            pct_wH20=warmH20/flats*100,
+            communal_wc = sum(wc_communal_ct),
+            communal_bath = sum(bath_communal_ct))
+wcdata  
+#write_rds(wcdata, "data/CPH_wcdata.rds")
+```
+
+
+## Join the aggregated attribute data with its spatial representations
+Now we can join the data with the spatial polygons
+```{r merge data}
+wc_spatial <- suburbs %>% 
+  merge(wcdata, by.x= "id",by.y ="suburb_id")
+wc_spatial
+```
+Now that we have a merged spatial dataset with attributes, let's review what attributes are available for visualisation
+```{r check names}
+#Review the column names to see what new columns you have created
+names(wc_spatial)
+```
+There is the suburb polygon data, such as id, bydel_nr, navn and areal_m2, and there is also the attribute data such as year, flats, bath ,etc.
+This gives us lots of choices for display. Lets put the data in a map.
+
+
+# Plot the data on the map
+
+Let's start by plotting one year alone, to learn how the map works.
+
+## Flats and water resources in 1950
+
+Run the whole chunk below, and once it renders, look at the map. Afterwards, try changing the definition of what is to be displayed on line 116. For example, replace `"flats"` for some other column, such as `"pct_bath"`, or `"wc_access"` to see how the map changes. 
+To modify the legend, you can modify line 118 where we describe `style`. Replace `style = "jenks"` with `"pretty"`, or `"equal"`, or `"quantile"`. What happens to your classification?
+
+```{r plot1950}
+wc1950 <- wc_spatial %>% 
+  filter(year==1950)
+
+library(tmap)
+tmap_mode(mode = "plot")
+tm_shape(wc1950) +
+  tm_borders(col = "black",
+             lwd = 1) +
+  tm_polygons("flats",
+              id = "navn",
+             style = "jenks")+
+  tm_legend(legend.position= c("RIGHT", "TOP"))+
+  tm_compass(position = c("RIGHT", "BOTTOM"),
+             type = "rose", 
+             size = 2) +
+  tm_scale_bar(position = c("RIGHT", "BOTTOM"),
+               breaks = c(0, 2, 4),
+               text.size = 1) +
+  tm_credits(position = c("RIGHT", "BOTTOM"),
+             text = "Adela Sobotkova, 2021") +
+  tm_layout(main.title = "Copenhagen 1950 situation",
+            legend.outside = FALSE)
+```
+
+## Flats through time
+
+Now, that you have mastered visualization of a single year, let's plot all the years we have available!
+```{r view-flats, fig.width = 20}
+#Check what years we have
+unique(sort(wc_spatial$year))
+
+tmap_options(limits = c(facets.view = 5)) # we want to view 5 periods
+tmap_mode(mode = "view" )
+tm_shape(wc_spatial) +
+  tm_facets(by = "year",
+           ncol=5)+
+  tm_polygons("flats",
+              id = "navn",
+             style = "jenks")+
+  tm_layout(main.title = "Copenhagen Flats",
+            legend.outside = TRUE)
+```
+<br>
+<br>
+
+
+## Flats per square kilometer
+
+Now that we have a spatial object, we can create new columns, for example utilizing the shape area to calculate the density of flats per sq km.
+```{r addsqkm}
+wc_spatial <- wc_spatial %>% 
+  mutate(area_km2 = areal_m2/1000000,
+         flat_per_km = flats/area_km2)
+```
+And now we can view these new columns in the map
+<br>
+```{r viewflats-per-km, fig.width = 20, fig.height = 20}
+tmap_mode(mode = "view" )
+tm_shape(wc_spatial) +
+  tm_facets(by = "year",
+          ncol=5)+
+  tm_polygons("flat_per_km",
+              n=5,
+             style = "jenks") #+
+  
+```
+
+<br>
+<br>
+
+
+## Access to private baths: percentages of households that have it per suburb
+
+Lets calculate the baths and toilets available per square kilometer per each suburb
+```{r view-pct-bath, fig.width = 20,fig.height = 20}
+tmap_mode(mode = "view" )
+tm_shape(wc_spatial) +
+  tm_facets(by = "year",
+           ncol=5)+
+  tm_polygons("pct_bath",
+              id = "navn",
+             style = "pretty", 
+             title = "% of flats with <br> access to bath") 
+```
+
+<br>
+<br>
+
+## Access to private toilets: percentages of households that have it per suburb
+<br>
+```{r view-pct-wc, fig.width = 20,fig.height = 20}
+library(tmap)
+tmap_options(limits = c(facets.view = 5)) # we want to view 5 periods
+tmap_mode(mode = "view" )
+tm_shape(wc_spatial) +
+  tm_facets(by = "year",
+            ncol=5)+
+  tm_polygons("pct_wc",
+              id = "navn",
+             style = "pretty", 
+             title = "% of flats with <br>access to WC")
+  
+```
+
+<br>
+<br>
+
+## Follow the example and develop your own analysis and map
+
+### You can also calculate the number of baths and toilets per square kilometer and plot in the map
+
+```{r bath-per-km}
+wc_spatial <- wc_spatial %>% 
+  mutate(bath_per_km = bath/area_km2,
+         wc_per_km = wc_access/area_km2)
+
+```
+
+### ..or continue with communal resources and warm water
+Why not practice and try plotting the flats that have access to communal baths and wc, and or hot water? Create your own map here, following the examples above.
+
+```{r}
+
+```
+
