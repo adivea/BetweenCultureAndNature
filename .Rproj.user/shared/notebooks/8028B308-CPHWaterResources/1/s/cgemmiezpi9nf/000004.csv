@@ -1,3 +1,0 @@
-"0","wc_spatial <- wc_spatial %>% "
-"0","  mutate(area_km2 = areal_m2/1000000,"
-"0","         flat_per_km = flats/area_km2)"

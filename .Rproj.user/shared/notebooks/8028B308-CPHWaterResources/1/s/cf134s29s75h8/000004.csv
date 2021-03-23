@@ -1,4 +1,0 @@
-"0","wc_spatial <- wc_spatial %>% "
-"0","  mutate(bath_per_km = bath/area_km2,"
-"0","         wc_per_km = wc_access/area_km2)"
-"0",""
